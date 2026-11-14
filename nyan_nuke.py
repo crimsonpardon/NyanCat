@@ -192,20 +192,34 @@ def action_webhook_spam(token, guild_id, settings=None):
         t.join()
 
 def action_mass_ping(token, guild_id):
-    """Ping @everyone 99 times across every text channel."""
+    """Ping with a custom message across every text channel."""
+    divider()
+    custom_msg = prompt("Custom ping message (press Enter for default @everyone 💥)")
+    count_inp  = prompt("How many pings per channel (press Enter for 99)")
+    divider()
+
+    message = custom_msg.strip() if custom_msg.strip() else "@everyone 💥"
+    try:
+        count = int(count_inp.strip()) if count_inp.strip() else 99
+        count = max(1, min(count, 999))
+    except ValueError:
+        count = 99
+
     channels = [c for c in get_channels(token, guild_id) if c.get("type") == 0]
     if not channels:
         status("No text channels.", ok=False)
         return
 
+    status(f"Sending \"{message}\" × {count} to {len(channels)} channels...")
+
     def ping_channel(ch):
-        for i in range(99):
+        for i in range(count):
             rate_safe(
                 api_post, token,
                 f"/channels/{ch['id']}/messages",
-                {"content": f"@everyone ping {i+1}/99 💥"},
+                {"content": message},
             )
-        status(f"Pinged #{ch['name']} 99×")
+        status(f"Pinged #{ch['name']} {count}×")
 
     threads = [threading.Thread(target=ping_channel, args=(ch,)) for ch in channels]
     for t in threads:
